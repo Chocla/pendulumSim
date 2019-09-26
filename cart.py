@@ -1,5 +1,4 @@
 import numpy as np 
-import control
 import pygame
 import scipy.linalg
 
@@ -9,7 +8,7 @@ g = -10
 #TODO: (Low Priority) Make it so that user can grab and move the pendulum
 class cart():
 
-    def __init__(self, state, m=1., M=5., L=2.,controlled=False):
+    def __init__(self, state, m=1., M=5., L=25.,controlled=False):
         self.state = state
         self.m = m
         self.M = M
@@ -29,9 +28,9 @@ class cart():
         self.py = self.cy - 50 * np.cos(self.th)
         self.pr = 10
     
-        self.dt = .16
+        self.dt = .016
 
-        self.eigs = np.array([-1.1,-1.2,-1.3,-1.4])
+        # self.eigs = np.array([-1.1,-1.2,-1.3,-1.4])
         self.K = getOptimalK(self.m,self.M,self.L,g,self.d) if controlled else np.zeros(4)
         # self.K = calculateK(self.m,self.M,self.L,g,self.d,self.eigs) if controlled else np.zeros(4)
 
@@ -54,35 +53,31 @@ class cart():
         self.px = self.cx + 50 * np.sin(self.th)
         self.py = self.cy - 50 * np.cos(self.th)
 
-#TODO: Understand how LQR actually works and implement it
 def getOptimalK(m,M,L,g,d):
     """Find optimal K matrix using LQR"""
     s = 1.
-    A = np.matrix([[0,1,0,0],[0,-d/M, -m*g/M,0],[0,0,0,1],[0,-s*d/(M*L), -s*(m+M)*g/(M*L),0]])
+    A = np.matrix([[0,1,0,0],[0,-d/M, -m*g/M,0],[0,0,0,1],[0,-s*d/(M*L), -s*(m+M)*g/(M*L),0]],dtype=np.float64)
 
-    B = np.matrix([[0],[1/M],[0],[s/(M*L)]])
+    B = np.matrix([[0],[1/M],[0],[s/(M*L)]],dtype=np.float64)
 
     Q = np.matrix([[.01,0,0,0],[0,1,0,0],[0,0,10,0],[0,0,0,100]],dtype=np.float64)
 
-    R = np.matrix(0.001)
-
+    R = np.matrix([0.001],dtype=np.float64)
+    #TODO: Implement my own ARE solver??
     tmp = scipy.linalg.solve_continuous_are(A,B,Q,R)
     K = scipy.linalg.inv(R)*B.T*tmp
-    print(K)
-    #FIXME: This is producing the correct eigenvalues, but plugging it into the control system causes catastrophic overflow problems
-    print("Eigs:", np.linalg.eig(A-B*K)[0])
     return K
 
 
-def calculateK(m,M,L,g,d,eigs): 
-    """calculate K that places eigenvalues for A-B*K"""
-    s = 1
-    A = np.array([[0,1,0,0],[0,-d/M, -m*g/M,0],[0,0,0,1],[0,-s*d/(M*L), -s*(m+M)*g/(M*L),0]])
-    B = [[0],[1/M],[0],[s/(M*L)]]
+# def calculateK(m,M,L,g,d,eigs): 
+#     """calculate K that places eigenvalues for A-B*K"""
+#     s = 1
+#     A = np.array([[0,1,0,0],[0,-d/M, -m*g/M,0],[0,0,0,1],[0,-s*d/(M*L), -s*(m+M)*g/(M*L),0]])
+#     B = [[0],[1/M],[0],[s/(M*L)]]
 
-    K = control.place(A,B,eigs)
-    print(K)
-    return K
+#     K = control.place(A,B,eigs)
+#     print(K)
+#     return K
 
 def heuns(dt, state,m,M,L,g,d,u):
     """Numerical ode solver using heun's method.
@@ -117,5 +112,3 @@ def stateDiff(state,m,M,L,g,d,u):
 if __name__ == "__main__":
     m, M, L, g, d = 1., 5., 2., -10., 1.
     K = getOptimalK(m,M,L,g,d)
-
-    state = np.array([0,1,2,3])
