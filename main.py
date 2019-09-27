@@ -10,19 +10,20 @@ else:
 
 (width, height ) = (600,300)
 screen = pygame.display.set_mode((width,height))
-pygame.display.set_caption('Pendulum Simulation')
+pygame.display.set_caption('Inverted Pendulum Simulation')
 
-c = cart.cart(np.array([-3,0,np.pi + 0.1,0],dtype=np.float64),controlled=controlFlag)
+c = cart.cart(
+    np.array([-3,0,np.pi + 0.1,0],dtype=np.float64),
+    controlled=controlFlag)
 
 pygame.display.flip()
 clock = pygame.time.Clock()
 running = True
-fps = 600
+maxFPS = 126
 while running:
-    clock.tick(fps)
+    clock.tick(maxFPS)
     c.update()
     c.draw(screen)
-    # print(c.state)
     pygame.display.flip()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
